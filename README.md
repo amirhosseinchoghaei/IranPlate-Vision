@@ -11,6 +11,8 @@
 
 </div>
 
+![IranPlate Vision Hero](docs/hero.png)
+
 > Real-time Persian plate detection + RTSP monitoring + bilingual dashboard, runnable in minutes.
 >
 > Note: This repository is maintained as a fork of [12345zahraa/Persian-Plates-Detection](https://github.com/12345zahraa/Persian-Plates-Detection).
