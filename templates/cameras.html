@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>IranPlate Vision - Camera Management | مدیریت دوربین‌ها</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0f;--surface:#16161a;--card:#1e1e24;--border:#2a2a32;
+  --accent:#6c63ff;--accent2:#4ade80;--danger:#f43f5e;--warn:#f59e0b;
+  --text:#e8e6f0;--muted:#7c7a8a;--font:'IY',Tahoma,sans-serif;
+}
+@font-face{font-family:'IY';src:url('/fonts/iranyekanweb_bold.woff') format('woff');font-weight:700}
+@font-face{font-family:'IY';src:url('/fonts/iranyekanweb_medium.woff') format('woff');font-weight:400}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font)}
+a{color:inherit;text-decoration:none}
+
+/* ── layout ── */
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:14px 20px;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.lang-toggle{
+  margin-right:8px;
+  border:1px solid var(--border);background:var(--card);color:var(--text);
+  border-radius:8px;padding:5px 10px;cursor:pointer;font-weight:700
+}
+.topbar h1{font-size:.95rem;font-weight:700}
+.back-btn{
+  display:flex;align-items:center;gap:6px;padding:6px 12px;
+  background:var(--card);border:1px solid var(--border);border-radius:8px;
+  font-size:.8rem;cursor:pointer;transition:background .15s;
+}
+.back-btn:hover{background:var(--border)}
+
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px;max-width:1400px;margin:0 auto}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:700;
+}
+.panel-body{padding:14px 16px}
+
+/* ── buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+  border-radius:9px;font-family:var(--font);font-size:.8rem;font-weight:700;
+  cursor:pointer;border:none;transition:opacity .15s,transform .1s;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn:hover{opacity:.85}
+.btn-sm{padding:5px 10px;font-size:.75rem;border-radius:7px}
+
+/* ── forms ── */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:9px;padding:9px 12px;color:var(--text);font-family:var(--font);
+  font-size:.82rem;outline:none;transition:border-color .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.row-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── camera cards ── */
+.cam-list{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto}
+.cam-list::-webkit-scrollbar{width:4px}
+.cam-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.cam-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  padding:12px 14px;display:flex;align-items:center;gap:12px;
+}
+.cam-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--muted)}
+.cam-dot.on{background:var(--accent2);box-shadow:0 0 6px var(--accent2)}
+.cam-dot.off{background:var(--muted)}
+.cam-info{flex:1;min-width:0}
+.cam-name{font-size:.84rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cam-url{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:right}
+.cam-role{
+  font-size:.68rem;padding:2px 7px;border-radius:5px;font-weight:700;
+}
+.role-entry{background:#1e3a5f;color:#60b4ff}
+.role-exit{background:#3b1f1f;color:#ff8080}
+.role-monitor{background:#2a2a1e;color:#ffd060}
+.cam-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ── live grid ── */
+.live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.live-tile{
+  background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  overflow:hidden;position:relative;
+}
+.live-tile img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#000}
+.live-label{
+  position:absolute;bottom:0;left:0;right:0;padding:6px 10px;
+  background:linear-gradient(transparent,rgba(0,0,0,.75));
+  font-size:.75rem;display:flex;justify-content:space-between;align-items:center;
+}
+.live-badge{font-size:.68rem;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.5)}
+.no-signal{
+  aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:8px;color:var(--muted);font-size:.8rem;background:#000;
+}
+
+/* ── log table ── */
+.log-wrap{max-height:360px;overflow-y:auto}
+.log-wrap::-webkit-scrollbar{width:4px}
+.log-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th{color:var(--muted);font-weight:400;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
+td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
+tr:hover td{background:rgba(255,255,255,.03)}
+.badge-white{background:#14532d;color:#4ade80;padding:2px 6px;border-radius:5px;font-size:.68rem}
+.badge-black{background:#4c0519;color:#f87171;padding:2px 6px;border-radius:5px;font-size:.68rem}
+.badge-none{background:var(--border);color:var(--muted);padding:2px 6px;border-radius:5px;font-size:.68rem}
+.plate-cell{font-family:'Courier New',monospace;direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+/* ── vehicle list ── */
+.veh-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+.veh-list::-webkit-scrollbar{width:4px}
+.veh-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.veh-row{
+  background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  padding:10px 12px;display:flex;align-items:center;gap:10px;
+}
+.veh-plate{font-family:'Courier New',monospace;font-size:.82rem;direction:ltr;unicode-bidi:isolate;flex-shrink:0}
+.veh-label{flex:1;font-size:.78rem;color:var(--muted)}
+.veh-note{font-size:.72rem;color:var(--muted)}
+
+/* ── toast ── */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:10px 20px;font-size:.82rem;transition:transform .25s,opacity .25s;
+  opacity:0;pointer-events:none;z-index:999;
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── modal ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;
+  align-items:center;justify-content:center;z-index:500;padding:16px;
+}
+.overlay.hidden{display:none}
+.modal{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:20px;width:100%;max-width:440px;
+}
+.modal h2{font-size:.95rem;margin-bottom:16px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* ── tabs ── */
+.tabs{display:flex;gap:6px;padding:14px 16px 0;border-bottom:1px solid var(--border)}
+.tab{
+  padding:8px 14px;font-size:.8rem;font-weight:700;border-radius:8px 8px 0 0;
+  cursor:pointer;color:var(--muted);border:1px solid transparent;border-bottom:none;
+  transition:color .15s;
+}
+.tab.active{color:var(--text);background:var(--card);border-color:var(--border)}
+.tab-content{display:none;padding:14px 16px}
+.tab-content.active{display:block}
+
+/* ── alert flash ── */
+@keyframes flashIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.log-flash{animation:flashIn .3s ease}
+.alert-black td{background:rgba(244,63,94,.08)!important}
+.alert-black .plate-cell{color:#f87171}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="back-btn">← Menu | منو</a>
+  <h1>IranPlate Vision - RTSP Camera Management | مدیریت دوربین‌های RTSP</h1>
+  <button id="langToggle" class="lang-toggle" title="Switch language | تغییر زبان">EN</button>
+  <span id="connStatus" style="margin-right:auto;font-size:.75rem;color:var(--muted)">Connecting... | در حال اتصال...</span>
+</div>
+
+<div class="layout">
+
+  <!-- ستون چپ: دوربین‌ها + لایو -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- لیست دوربین‌ها -->
+    <div class="panel">
+      <div class="panel-head">
+        Cameras | دوربین‌ها
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add | افزودن</button>
+      </div>
+      <div class="panel-body">
+        <div class="cam-list" id="camList"><p style="color:var(--muted);font-size:.8rem">No cameras registered | هیچ دوربینی ثبت نشده</p></div>
+      </div>
+    </div>
+
+    <!-- تصویر زنده -->
+    <div class="panel">
+      <div class="panel-head">
+        Live View | تصویر زنده
+        <span style="font-size:.75rem;color:var(--muted)" id="snapAge"></span>
+      </div>
+      <div class="panel-body" style="padding:12px">
+        <div class="live-grid" id="liveGrid">
+          <p style="color:var(--muted);font-size:.8rem">No active cameras | دوربینی فعال نیست</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ستون راست: لاگ + وایت‌لیست -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- لاگ تردد -->
+    <div class="panel">
+      <div class="panel-head">
+        Access Log | لاگ تردد
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="loadLog()">Refresh | بروزرسانی</button>
+          <button class="btn btn-danger btn-sm" onclick="clearLog()">Clear | پاک کردن</button>
+        </div>
+      </div>
+      <div class="log-wrap">
+        <table>
+          <thead><tr><th>Plate | پلاک</th><th>Camera | دوربین</th><th>Role | نقش</th><th>Status | وضعیت</th><th>Time | زمان</th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- وایت‌لیست / بلک‌لیست -->
+    <div class="panel">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('white')">Allowed ✅ | مجاز ✅</div>
+        <div class="tab" onclick="switchTab('black')">Blocked ❌ | غیرمجاز ❌</div>
+        <div class="tab" onclick="switchTab('add')">Add + | افزودن +</div>
+      </div>
+      <div id="tab-white" class="tab-content active">
+        <div class="veh-list" id="vehWhite"><p style="color:var(--muted);font-size:.8rem">Empty | خالی</p></div>
+      </div>
+      <div id="tab-black" class="tab-content">
+        <div class="veh-list" id="vehBlack"><p style="color:var(--muted);font-size:.8rem">Empty | خالی</p></div>
+      </div>
+      <div id="tab-add" class="tab-content">
+        <div class="row-fields">
+          <div class="field"><label>Plate (Latin) | پلاک (لاتین)</label><input id="vPlate" placeholder="24ن144-66"></div>
+          <div class="field"><label>Label | برچسب</label><input id="vLabel" placeholder="e.g. CEO | مثلاً: مدیرعامل"></div>
+        </div>
+        <div class="row-fields">
+          <div class="field">
+            <label>List | لیست</label>
+            <select id="vList">
+              <option value="white">Allowed ✅ | مجاز ✅</option>
+              <option value="black">Blocked ❌ | غیرمجاز ❌</option>
+            </select>
+          </div>
+          <div class="field"><label>Note | یادداشت</label><input id="vNote" placeholder="Optional | اختیاری"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addVehicle()">Add Vehicle | افزودن خودرو</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- modal افزودن / ویرایش دوربین -->
+<div class="overlay hidden" id="camModal">
+  <div class="modal">
+    <h2 id="modalTitle">Add Camera | افزودن دوربین</h2>
+    <div class="field"><label>Camera Name | نام دوربین</label><input id="mName" placeholder="Entry Camera 1 | دوربین ورودی ۱"></div>
+    <div class="field"><label>RTSP URL | آدرس RTSP</label><input id="mUrl" placeholder="rtsp://admin:pass@192.168.1.100:554/stream" dir="ltr" style="text-align:left"></div>
+    <div class="field">
+      <label>Role | نقش</label>
+      <select id="mRole">
+        <option value="entry">Entry | ورودی</option>
+        <option value="exit">Exit | خروجی</option>
+        <option value="monitor">Monitor | مانیتور</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel | لغو</button>
+      <button class="btn btn-primary" onclick="saveCamera()">Save | ذخیره</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const ROLE_LABEL = {entry:'Entry | ورودی', exit:'Exit | خروجی', monitor:'Monitor | مانیتور'};
+const ROLE_CLASS = {entry:'role-entry', exit:'role-exit', monitor:'role-monitor'};
+let cameras = [];
+let editingId = null;
+let snapTimers = {};
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, dur=2500){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// ── SSE ───────────────────────────────────────────────────────────────────────
+let es;
+function connectSSE(){
+  es = new EventSource('/api/events');
+  es.onopen = ()=>{ document.getElementById('connStatus').textContent=__tPipe('Connected ✓ | متصل ✓'); };
+  es.onerror = ()=>{ document.getElementById('connStatus').textContent=__tPipe('Disconnected - reconnecting... | قطع - تلاش مجدد...'); setTimeout(connectSSE,3000); };
+  es.onmessage = e=>{
+    try{
+      const d = JSON.parse(e.data);
+      if(d.type==='detection') onDetection(d);
+    }catch{}
+  };
+}
+
+function onDetection(d){
+  prependLog({
+    plate: d.plate, camera_name: d.camera_name, role: d.role,
+    confidence: d.conf, ts: d.ts, list: d.list
+  }, true);
+  if(d.list==='black'){
+    toast(`⛔ ${__tPipe('Blocked plate | پلاک غیرمجاز')}: ${d.plate}`, 5000);
+  }
+}
+
+// ── Cameras ───────────────────────────────────────────────────────────────────
+async function loadCameras(){
+  const r = await fetch('/api/cameras');
+  cameras = await r.json();
+  renderCameras();
+  renderLiveGrid();
+}
+
+function renderCameras(){
+  const el = document.getElementById('camList');
+  if(!cameras.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:.8rem">'+__tPipe('No cameras registered | هیچ دوربینی ثبت نشده')+'</p>';
+    return;
+  }
+  el.innerHTML = cameras.map(c=>`
+    <div class="cam-card">
+      <div class="cam-dot ${c.enabled && c.running ? 'on':'off'}"></div>
+      <div class="cam-info">
+        <div class="cam-name">${c.name}</div>
+        <div class="cam-url">${c.url}</div>
+      </div>
+      <span class="cam-role ${ROLE_CLASS[c.role]}">${__tPipe(ROLE_LABEL[c.role])}</span>
+      <div class="cam-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editCamera(${c.id})">${__tPipe('Edit | ویرایش')}</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleCamera(${c.id},${c.enabled})">${c.enabled?__tPipe('Disable | غیرفعال'):__tPipe('Enable | فعال')}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCamera(${c.id})">${__tPipe('Delete | حذف')}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderLiveGrid(){
+  const el = document.getElementById('liveGrid');
+  const active = cameras.filter(c=>c.enabled);
+  if(!active.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:.8rem">'+__tPipe('No active cameras | دوربینی فعال نیست')+'</p>';
+    return;
+  }
+  el.innerHTML = active.map(c=>`
+    <div class="live-tile">
+      <img id="snap-${c.id}" src="" onerror="this.style.display='none'" style="display:none">
+      <div class="no-signal" id="nosig-${c.id}">
+        <span style="font-size:1.4rem">📷</span>
+        <span>${__tPipe('Connecting... | در حال اتصال...')}</span>
+      </div>
+      <div class="live-label">
+        <span>${c.name}</span>
+        <span class="live-badge cam-role ${ROLE_CLASS[c.role]}">${__tPipe(ROLE_LABEL[c.role])}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Clear old timers
+  Object.values(snapTimers).forEach(clearInterval);
+  snapTimers = {};
+
+  active.forEach(c=>{
+    snapTimers[c.id] = setInterval(()=>fetchSnap(c.id), 1500);
+    fetchSnap(c.id);
+  });
+}
+
+async function fetchSnap(cid){
+  try{
+    const r = await fetch(`/api/cameras/${cid}/snapshot`);
+    if(!r.ok) return;
+    const d = await r.json();
+    const img = document.getElementById(`snap-${cid}`);
+    const ns  = document.getElementById(`nosig-${cid}`);
+    if(img){
+      img.src = 'data:image/jpeg;base64,'+d.image;
+      img.style.display='block';
+      if(ns) ns.style.display='none';
+    }
+  }catch{}
+}
+
+function openAddModal(){
+  editingId = null;
+  document.getElementById('modalTitle').textContent=__tPipe('Add Camera | افزودن دوربین');
+  document.getElementById('mName').value='';
+  document.getElementById('mUrl').value='';
+  document.getElementById('mRole').value='entry';
+  document.getElementById('camModal').classList.remove('hidden');
+}
+function editCamera(id){
+  const c = cameras.find(x=>x.id===id);
+  if(!c) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent=__tPipe('Edit Camera | ویرایش دوربین');
+  document.getElementById('mName').value=c.name;
+  document.getElementById('mUrl').value=c.url;
+  document.getElementById('mRole').value=c.role;
+  document.getElementById('camModal').classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('camModal').classList.add('hidden'); }
+
+async function saveCamera(){
+  const name = document.getElementById('mName').value.trim();
+  const url  = document.getElementById('mUrl').value.trim();
+  const role = document.getElementById('mRole').value;
+  if(!name||!url){ toast(__tPipe('Name and URL are required | نام و آدرس الزامی هستند')); return; }
+
+  if(editingId){
+    const c = cameras.find(x=>x.id===editingId);
+    await fetch(`/api/cameras/${editingId}`,{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,url,role,enabled:c.enabled})
+    });
+    toast(__tPipe('Camera updated | دوربین ویرایش شد'));
+  } else {
+    await fetch('/api/cameras',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,url,role})
+    });
+    toast(__tPipe('Camera added | دوربین اضافه شد'));
+  }
+  closeModal();
+  loadCameras();
+}
+
+async function toggleCamera(id, enabled){
+  await fetch(`/api/cameras/${id}/toggle`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({enabled:!enabled})
+  });
+  loadCameras();
+}
+
+async function deleteCamera(id){
+  if(!confirm(__tPipe('Delete this camera? | دوربین حذف شود؟'))) return;
+  await fetch(`/api/cameras/${id}`,{method:'DELETE'});
+  toast(__tPipe('Camera deleted | دوربین حذف شد'));
+  loadCameras();
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+const MAX_LOG_ROWS = 300;
+async function loadLog(){
+  const r = await fetch('/api/log?limit=200');
+  const rows = await r.json();
+  const tbody = document.getElementById('logBody');
+  tbody.innerHTML = '';
+  rows.forEach(row => appendLogRow(tbody, row, false));
+}
+
+function prependLog(row, flash){
+  const tbody = document.getElementById('logBody');
+  const tr = buildLogRow(row, flash);
+  tbody.insertBefore(tr, tbody.firstChild);
+  while(tbody.children.length > MAX_LOG_ROWS) tbody.removeChild(tbody.lastChild);
+}
+
+function appendLogRow(tbody, row, flash){
+  tbody.appendChild(buildLogRow(row, flash));
+}
+
+function buildLogRow(row, flash){
+  const listBadge = row.list==='white'
+    ? `<span class="badge-white">${__tPipe('Allowed | مجاز')}</span>`
+    : row.list==='black'
+      ? `<span class="badge-black">${__tPipe('Blocked | غیرمجاز')}</span>`
+      : '<span class="badge-none">—</span>';
+  const tr = document.createElement('tr');
+  if(row.list==='black') tr.classList.add('alert-black');
+  if(flash) tr.classList.add('log-flash');
+  tr.innerHTML = `
+    <td><span class="plate-cell">${row.plate||'—'}</span></td>
+    <td>${row.camera_name||'—'}</td>
+    <td>${__tPipe(ROLE_LABEL[row.role]||row.role||'—')}</td>
+    <td>${listBadge}</td>
+    <td>${row.ts||'—'}</td>
+  `;
+  return tr;
+}
+
+async function clearLog(){
+  if(!confirm(__tPipe('Clear log? | لاگ پاک شود؟'))) return;
+  await fetch('/api/log',{method:'DELETE'});
+  document.getElementById('logBody').innerHTML='';
+  toast(__tPipe('Log cleared | لاگ پاک شد'));
+}
+
+// ── Vehicles ──────────────────────────────────────────────────────────────────
+async function loadVehicles(){
+  const r = await fetch('/api/vehicles');
+  const list = await r.json();
+  const whites = list.filter(v=>v.list==='white');
+  const blacks = list.filter(v=>v.list==='black');
+
+  const renderList = (arr)=> arr.length
+    ? arr.map(v=>`
+        <div class="veh-row">
+          <span class="veh-plate">${v.plate}</span>
+          <span class="veh-label">${v.label||''}</span>
+          <span class="veh-note">${v.note||''}</span>
+          <button class="btn btn-danger btn-sm" onclick="delVehicle('${v.plate}')">${__tPipe('Delete | حذف')}</button>
+        </div>`).join('')
+    : `<p style="color:var(--muted);font-size:.8rem">${__tPipe('Empty | خالی')}</p>`;
+
+  document.getElementById('vehWhite').innerHTML = renderList(whites);
+  document.getElementById('vehBlack').innerHTML = renderList(blacks);
+}
+
+async function addVehicle(){
+  const plate = document.getElementById('vPlate').value.trim();
+  if(!plate){ toast(__tPipe('Plate is required | پلاک الزامی است')); return; }
+  await fetch('/api/vehicles',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      plate,
+      label: document.getElementById('vLabel').value.trim(),
+      list:  document.getElementById('vList').value,
+      note:  document.getElementById('vNote').value.trim(),
+    })
+  });
+  toast(__tPipe('Vehicle saved | خودرو ثبت شد'));
+  document.getElementById('vPlate').value='';
+  document.getElementById('vLabel').value='';
+  document.getElementById('vNote').value='';
+  loadVehicles();
+}
+
+async function delVehicle(plate){
+  await fetch(`/api/vehicles/${encodeURIComponent(plate)}`,{method:'DELETE'});
+  loadVehicles();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['white','black','add'];
+    t.classList.toggle('active', names[i]===name);
+  });
+  document.querySelectorAll('.tab-content').forEach(el=>{
+    el.classList.toggle('active', el.id==='tab-'+name);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+connectSSE();
+loadCameras();
+loadLog();
+loadVehicles();
+setInterval(loadCameras, 10000);
+</script>
+<script src="/static/i18n.js"></script>
+</body>
+</html>

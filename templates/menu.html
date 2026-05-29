@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>IranPlate Vision | IranPlate Vision</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0f;--surface:#16161a;--card:#1e1e24;--border:#2a2a32;
+  --accent:#6c63ff;--text:#e8e6f0;--muted:#7c7a8a;
+  --font:'IY',Tahoma,sans-serif;
+}
+@font-face{font-family:'IY';src:url('/fonts/iranyekanweb_bold.woff') format('woff');font-weight:700}
+@font-face{font-family:'IY';src:url('/fonts/iranyekanweb_medium.woff') format('woff');font-weight:400}
+html,body{
+  min-height:100dvh;background:var(--bg);color:var(--text);
+  font-family:var(--font);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:24px;
+}
+.lang-toggle{
+  position:fixed;top:12px;right:12px;z-index:20;
+  border:1px solid var(--border);background:var(--card);color:var(--text);
+  border-radius:10px;padding:6px 10px;cursor:pointer;font-weight:700
+}
+
+.brand{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  margin-bottom:48px;text-align:center;
+}
+.brand-icon{
+  width:72px;height:72px;border-radius:20px;
+  background:linear-gradient(135deg,#6c63ff,#4f46e5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;box-shadow:0 8px 32px rgba(108,99,255,.35);
+}
+.brand h1{font-size:1.3rem;font-weight:700}
+.brand p{font-size:.82rem;color:var(--muted)}
+
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;width:100%;max-width:700px;
+}
+
+.tile{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:24px 20px;display:flex;flex-direction:column;gap:12px;
+  text-decoration:none;color:var(--text);
+  transition:transform .18s,border-color .18s,box-shadow .18s;
+  cursor:pointer;
+}
+.tile:hover{
+  transform:translateY(-3px);
+  border-color:var(--accent);
+  box-shadow:0 8px 28px rgba(108,99,255,.18);
+}
+.tile-icon{
+  width:48px;height:48px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+}
+.tile h2{font-size:.92rem;font-weight:700}
+.tile p{font-size:.78rem;color:var(--muted);line-height:1.5}
+.tile-arrow{
+  margin-top:auto;font-size:.75rem;color:var(--muted);
+  display:flex;align-items:center;gap:4px;
+}
+
+/* Card icon colors */
+.ic-scan{background:rgba(108,99,255,.15)}
+.ic-cam{background:rgba(74,222,128,.12)}
+.ic-log{background:rgba(251,191,36,.1)}
+
+/* Model status badge */
+.status-bar{
+  margin-top:40px;display:flex;align-items:center;gap:8px;
+  font-size:.75rem;color:var(--muted);
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.dot.ready{background:#4ade80;box-shadow:0 0 6px #4ade80}
+.dot.loading{background:#fbbf24;animation:pulse 1.2s infinite}
+.dot.error{background:#f43f5e}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+<button id="langToggle" class="lang-toggle" title="Switch language | تغییر زبان">EN</button>
+
+<div class="brand">
+  <div class="brand-icon">🚗</div>
+  <h1>IranPlate Vision | IranPlate Vision</h1>
+  <p>IranPlate Vision dashboard | داشبورد IranPlate Vision</p>
+</div>
+
+<div class="grid">
+
+  <a class="tile" href="/scan">
+    <div class="tile-icon ic-scan">🔍</div>
+    <h2>Plate Scan | اسکن پلاک</h2>
+    <p>Upload image or use mobile camera for instant plate detection | آپلود عکس یا استفاده از دوربین موبایل برای تشخیص فوری پلاک</p>
+    <div class="tile-arrow">Open | ورود ←</div>
+  </a>
+
+  <a class="tile" href="/cameras">
+    <div class="tile-icon ic-cam">📹</div>
+    <h2>RTSP Cameras | دوربین‌های RTSP</h2>
+    <p>Manage entry/exit cameras, traffic logs, and access control | مدیریت دوربین‌های گیت ورودی و خروجی، لاگ تردد و کنترل دسترسی</p>
+    <div class="tile-arrow">Open | ورود ←</div>
+  </a>
+
+</div>
+
+<div class="status-bar">
+  <div class="dot loading" id="dot"></div>
+  <span id="statusTxt">Checking model status... | در حال بررسی وضعیت مدل‌ها...</span>
+</div>
+
+<script>
+async function checkStatus(){
+  try{
+    const r = await fetch('/status');
+    const d = await r.json();
+    const dot = document.getElementById('dot');
+    const txt = document.getElementById('statusTxt');
+    if(d.ready){
+      dot.className='dot ready';
+      txt.textContent=__tPipe('AI models are ready | مدل‌های هوش مصنوعی آماده هستند');
+    } else if(d.error){
+      dot.className='dot error';
+      txt.textContent = __tPipe('Model load error | خطا در بارگذاری مدل') + ': ' + d.error;
+    } else {
+      dot.className='dot loading';
+      txt.textContent=__tPipe('Loading models... | در حال بارگذاری مدل‌ها...');
+      setTimeout(checkStatus, 2000);
+    }
+  }catch{
+    setTimeout(checkStatus, 3000);
+  }
+}
+checkStatus();
+</script>
+<script src="/static/i18n.js"></script>
+</body>
+</html>

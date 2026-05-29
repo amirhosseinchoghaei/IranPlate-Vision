@@ -1,0 +1,32 @@
+name: Bug report
+about: Report a reproducible problem
+labels: bug
+
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include exact steps and sample input if possible.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, and how you run the app.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / errors
+      description: Paste traceback or console logs.
