@@ -110,17 +110,92 @@ a{color:inherit;text-decoration:none}
 }
 
 /* ── log table ── */
-.log-wrap{max-height:360px;overflow-y:auto}
+.log-wrap{max-height:450px;overflow-y:auto}
 .log-wrap::-webkit-scrollbar{width:4px}
 .log-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 table{width:100%;border-collapse:collapse;font-size:.78rem}
-th{color:var(--muted);font-weight:400;padding:6px 8px;text-align:right;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
-td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
+th{color:var(--muted);font-weight:400;padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10}
+td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
 tr:hover td{background:rgba(255,255,255,.03)}
-.badge-white{background:#14532d;color:#4ade80;padding:2px 6px;border-radius:5px;font-size:.68rem}
-.badge-black{background:#4c0519;color:#f87171;padding:2px 6px;border-radius:5px;font-size:.68rem}
-.badge-none{background:var(--border);color:var(--muted);padding:2px 6px;border-radius:5px;font-size:.68rem}
-.plate-cell{font-family:'Courier New',monospace;direction:ltr;unicode-bidi:isolate;display:inline-block}
+.badge-white{background:#14532d;color:#4ade80;padding:3px 8px;border-radius:5px;font-size:.7rem;font-weight:700}
+.badge-black{background:#4c0519;color:#f87171;padding:3px 8px;border-radius:5px;font-size:.7rem;font-weight:700}
+.badge-none{background:var(--border);color:var(--muted);padding:3px 8px;border-radius:5px;font-size:.7rem}
+
+/* ── GRAPHIC PLATE STYLES (Scan Style Integration) ── */
+.history-plate {
+  --hplate-bg: #ddd;
+  --hplate-fg: #1d2b1f;
+  --hplate-side-border: #555;
+  width: 212px;
+  max-width: 100%;
+  height: 36px;
+  background: var(--hplate-bg);
+  border: 1px solid #3d3d3d;
+  border-radius: 5px;
+  display: flex;
+  overflow: hidden;
+  direction: ltr;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 4px rgba(0,0,0,0.3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform .15s ease;
+}
+.history-plate:hover { transform: scale(1.02); }
+.history-plate-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--hplate-fg);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: 'IY', Tahoma, sans-serif;
+}
+.history-plate-letter { font-size: 20px; }
+.history-plate-blue {
+  width: 24px;
+  background: #0a35a8;
+  position: relative;
+  flex-shrink: 0;
+}
+.history-plate-flag { position: absolute; left: 3px; top: 3px; width: 18px; }
+.history-plate-flag div { height: 3px; }
+.history-plate-flag div:nth-child(1) { background: #1f9b3b; }
+.history-plate-flag div:nth-child(2) { background: #fff; }
+.history-plate-flag div:nth-child(3) { background: #d11313; }
+.history-plate-ir {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  color: #fff;
+  font: 700 6px/1 Arial, sans-serif;
+}
+.history-plate-side {
+  width: 34px;
+  border-left: 1px solid var(--hplate-side-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #222;
+  flex-shrink: 0;
+  font-family: 'IY', Tahoma, sans-serif;
+}
+.history-plate-side span { font-size: 7px; line-height: 1; }
+.history-plate-side strong { font-size: 18px; line-height: .9; font-weight: 700; }
+.plate-fallback {
+  font-family: 'Courier New', monospace;
+  font-size: .9rem;
+  font-weight: bold;
+  direction: ltr;
+  unicode-bidi: isolate;
+  background: var(--surface);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
 
 /* ── vehicle list ── */
 .veh-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
@@ -171,7 +246,6 @@ tr:hover td{background:rgba(255,255,255,.03)}
 @keyframes flashIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 .log-flash{animation:flashIn .3s ease}
 .alert-black td{background:rgba(244,63,94,.08)!important}
-.alert-black .plate-cell{color:#f87171}
 </style>
 </head>
 <body>
@@ -228,7 +302,15 @@ tr:hover td{background:rgba(255,255,255,.03)}
       </div>
       <div class="log-wrap">
         <table>
-          <thead><tr><th>Plate | پلاک</th><th>Camera | دوربین</th><th>Role | نقش</th><th>Status | وضعیت</th><th>Time | زمان</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Plate | پلاک</th>
+              <th>Camera | دوربین</th>
+              <th>Role | نقش</th>
+              <th>Status | وضعیت</th>
+              <th>Time | زمان</th>
+            </tr>
+          </thead>
           <tbody id="logBody"></tbody>
         </table>
       </div>
@@ -295,9 +377,68 @@ tr:hover td{background:rgba(255,255,255,.03)}
 <script>
 const ROLE_LABEL = {entry:'Entry | ورودی', exit:'Exit | خروجی', monitor:'Monitor | مانیتور'};
 const ROLE_CLASS = {entry:'role-entry', exit:'role-exit', monitor:'role-monitor'};
+const TO_FA = {'0':'۰','1':'۱','2':'۲','3':'۳','4':'۴','5':'۵','6':'۶','7':'۷','8':'۸','9':'۹'};
+const TO_EN = {'۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9'};
+
 let cameras = [];
 let editingId = null;
 let snapTimers = {};
+
+const toFa = s => s ? s.split('').map(c => TO_FA[c] ?? c).join('') : '';
+const toEn = s => s ? s.split('').map(c => TO_EN[c] ?? c).join('') : '';
+
+// ── Plate Parsing and Rendering (Identical to Scan UI) ─────────────────────
+function parsePlate(raw) {
+  if (!raw) return null;
+  const t = raw.replace(/\s/g, '');
+  const m = t.match(/^([0-9۰-۹]{2})([؀-ۿa-zA-Z])([0-9۰-۹]{3})([0-9۰-۹]{2})$/);
+  if (!m) return null;
+  const en1 = toEn(m[1]), en3 = toEn(m[3]), en4 = toEn(m[4]);
+  return {
+    prefix: toFa(en1),
+    letter: m[2],
+    middle: toFa(en3),
+    suffix: toFa(en4),
+    copyText: en1 + m[2] + en3 + '-' + en4
+  };
+}
+
+function copyPlateText(value) {
+  const cleaned = String(value || '').replace(/[\u2066-\u2069\u202A-\u202E\u202C\u200E\u200F]/g, '');
+  const m = cleaned.match(/^(\d{2})([^\d-])(\d{3})-(\d{2})$/);
+  const logical = m ? `${m[1]}\u200E${m[2]}\u200E${m[3]}-${m[4]}` : cleaned;
+  const safeValue = '\u202A' + logical + '\u202C';
+  return navigator.clipboard.writeText(safeValue);
+}
+
+function buildMiniPlateHtml(rawText, listType) {
+  const p = parsePlate(rawText);
+  if (!p) {
+    return `<span class="plate-fallback">${rawText || '—'}</span>`;
+  }
+  
+  let bg = '#ddd';
+  if (listType === 'white') bg = '#e6f4ea';
+  if (listType === 'black') bg = '#fce8e6';
+
+  return `
+    <div class="history-plate" style="--hplate-bg:${bg};" title="__tPipe('Click to copy | کلیک برای کپی')" onclick="copyPlateText('${p.copyText}').then(()=>toast('${__tPipe('Copied | کپی شد')}: ${p.copyText}'))">
+      <div class="history-plate-blue">
+        <div class="history-plate-flag"><div></div><div></div><div></div></div>
+        <div class="history-plate-ir">I.R.<br>IRAN</div>
+      </div>
+      <div class="history-plate-main">
+        <span>${p.prefix}</span>
+        <span class="history-plate-letter">${p.letter}</span>
+        <span>${p.middle}</span>
+      </div>
+      <div class="history-plate-side">
+        <span>ایران</span>
+        <strong>${p.suffix}</strong>
+      </div>
+    </div>
+  `;
+}
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function toast(msg, dur=2500){
@@ -383,7 +524,6 @@ function renderLiveGrid(){
     </div>
   `).join('');
 
-  // Clear old timers
   Object.values(snapTimers).forEach(clearInterval);
   snapTimers = {};
 
@@ -497,8 +637,11 @@ function buildLogRow(row, flash){
   const tr = document.createElement('tr');
   if(row.list==='black') tr.classList.add('alert-black');
   if(flash) tr.classList.add('log-flash');
+  
+  const plateWidgetHtml = buildMiniPlateHtml(row.plate, row.list);
+
   tr.innerHTML = `
-    <td><span class="plate-cell">${row.plate||'—'}</span></td>
+    <td>${plateWidgetHtml}</td>
     <td>${row.camera_name||'—'}</td>
     <td>${__tPipe(ROLE_LABEL[row.role]||row.role||'—')}</td>
     <td>${listBadge}</td>
