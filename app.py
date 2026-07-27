@@ -276,10 +276,25 @@ def api_vehicles_list():
 @app.route('/api/vehicles', methods=['POST'])
 def api_vehicle_add():
     d = request.get_json(force=True)
-    plate = d.get('plate', '').strip()
-    if not plate:
+    raw_plate = d.get('plate', '').strip()
+    if not raw_plate:
         return jsonify({'error': 'plate is required | plate الزامی است'}), 400
-    db.vehicle_upsert(plate, d.get('label', ''), d.get('list', 'white'), d.get('note', ''))
+    
+    # ۱. پاک‌سازی کامل کاراکترهای مخفی BIDI، فواصل و خط‌تیره
+    clean_plate = re.sub(r'[\u202A-\u202E\u200E\u200F\u2066-\u2069\s-]', '', raw_plate)
+    # ۲. تبدیل اعداد فارسی به انگلیسی جهت یکسان‌سازی با کلید دیتابیس
+    clean_plate = clean_plate.translate(FA_TO_EN)
+    
+    # دریافت تعداد روزهای دوره مجاز
+    valid_days = d.get('valid_days', None)
+    
+    db.vehicle_upsert(
+        plate=clean_plate,
+        label=d.get('label', ''),
+        list_type=d.get('list', 'white'),
+        note=d.get('note', ''),
+        valid_days=valid_days
+    )
     return jsonify({'ok': True})
 
 @app.route('/api/vehicles/<plate>', methods=['DELETE'])
