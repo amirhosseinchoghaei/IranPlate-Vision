@@ -331,7 +331,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
       </div>
       <div id="tab-add" class="tab-content">
         <div class="row-fields">
-          <div class="field"><label>Plate (Latin) | پلاک (لاتین)</label><input id="vPlate" placeholder="24ن144-66"></div>
+          <div class="field"><label>Plate | پلاک (لاتین یا کپی‌شده)</label><input id="vPlate" placeholder="98س861-68"></div>
           <div class="field"><label>Label | برچسب</label><input id="vLabel" placeholder="e.g. CEO | مثلاً: مدیرعامل"></div>
         </div>
         <div class="row-fields">
@@ -342,8 +342,12 @@ tr:hover td{background:rgba(255,255,255,.03)}
               <option value="black">Blocked ❌ | غیرمجاز ❌</option>
             </select>
           </div>
-          <div class="field"><label>Note | یادداشت</label><input id="vNote" placeholder="Optional | اختیاری"></div>
+          <div class="field">
+            <label>Period (Days) | دوره (روز)</label>
+            <input id="vDays" type="number" placeholder="Empty = Unlimited | خالی = نامحدود">
+          </div>
         </div>
+        <div class="field"><label>Note | یادداشت</label><input id="vNote" placeholder="Optional | اختیاری"></div>
         <button class="btn btn-primary" onclick="addVehicle()">Add Vehicle | افزودن خودرو</button>
       </div>
     </div>
@@ -669,7 +673,7 @@ async function loadVehicles(){
         <div class="veh-row">
           <span class="veh-plate">${v.plate}</span>
           <span class="veh-label">${v.label||''}</span>
-          <span class="veh-note">${v.note||''}</span>
+          <span class="veh-note">${v.expire_at ? `انقضا: ${v.expire_at}` : (v.note||'')}</span>
           <button class="btn btn-danger btn-sm" onclick="delVehicle('${v.plate}')">${__tPipe('Delete | حذف')}</button>
         </div>`).join('')
     : `<p style="color:var(--muted);font-size:.8rem">${__tPipe('Empty | خالی')}</p>`;
@@ -680,19 +684,25 @@ async function loadVehicles(){
 
 async function addVehicle(){
   const plate = document.getElementById('vPlate').value.trim();
+  const vDays = document.getElementById('vDays').value.trim();
+  
   if(!plate){ toast(__tPipe('Plate is required | پلاک الزامی است')); return; }
+  
   await fetch('/api/vehicles',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
-      plate,
+      plate: plate,
       label: document.getElementById('vLabel').value.trim(),
       list:  document.getElementById('vList').value,
       note:  document.getElementById('vNote').value.trim(),
+      valid_days: vDays ? parseInt(vDays) : null
     })
   });
+  
   toast(__tPipe('Vehicle saved | خودرو ثبت شد'));
   document.getElementById('vPlate').value='';
   document.getElementById('vLabel').value='';
+  document.getElementById('vDays').value='';
   document.getElementById('vNote').value='';
   loadVehicles();
 }
